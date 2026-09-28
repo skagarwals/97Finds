@@ -51,7 +51,7 @@
                 </div>
                 <div class="p-3">
                     <h3 class="font-semibold text-gray-900 text-sm">Organic Maple Syrup 1L <span class="text-[11px] font-normal text-gray-400">(#123456)</span></h3>
-                    <p class="text-xs text-gray-500 mt-0.5">Spotted 20 mins ago • Shelf #4</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Spotted just now • Shelf #4</p>
                     
                     <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center">
                         <button onclick="openComments('Organic Maple Syrup 1L')" class="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1">
@@ -74,7 +74,7 @@
         <!-- VIEW: POST ITEM -->
         <div id="post-view" class="hidden space-y-4">
             <h2 class="font-bold text-gray-700 text-sm uppercase tracking-wider">Report .97 Clearance</h2>
-            <p class="text-xs text-gray-500">Snap or select a tag photo, enter the item number from the tag, and look it up instantly!</p>
+            <p class="text-xs text-gray-500">Snap or select a tag photo, enter details, and publish to the live view!</p>
             
             <div class="space-y-3">
                 <div>
@@ -209,10 +209,79 @@
             window.open(`https://www.costco.ca/CatalogSearch?keyword=${encodeURIComponent(query)}`, '_blank');
         }
 
+        function submitPost() {
+            const name = document.getElementById('item-name').value || "Clearance Find";
+            const code = document.getElementById('item-code').value || "123456";
+            const price = document.getElementById('item-price').value || "19.97";
+            const origPrice = document.getElementById('item-orig-price').value || "49.99";
+            const store = document.getElementById('location-select').value;
+            const photoInput = document.getElementById('item-photo');
+
+            let photoUrl = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80";
+
+            if (photoInput.files && photoInput.files[0]) {
+                photoUrl = URL.createObjectURL(photoInput.files[0]);
+            }
+
+            const feedView = document.getElementById('feed-view');
+
+            const newCard = document.createElement('div');
+            newCard.className = "bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden";
+            newCard.setAttribute('data-store', store);
+            newCard.setAttribute('data-status', 'active');
+
+            newCard.innerHTML = `
+                <div class="relative bg-gray-100 h-48 flex items-center justify-center">
+                    <img src="${photoUrl}" alt="Item" class="w-full h-full object-cover">
+                    <span class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">
+                        $${price} <span class="text-[10px] line-through opacity-75">$${origPrice}</span>
+                    </span>
+                    <span class="absolute top-2 left-2 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow flex items-center gap-1">
+                        <i class="fa-solid fa-check-circle"></i> Available
+                    </span>
+                    <span class="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded">
+                        <i class="fa-solid fa-location-dot mr-1 text-red-400"></i> ${store} Warehouse
+                    </span>
+                </div>
+                <div class="p-3">
+                    <h3 class="font-semibold text-gray-900 text-sm">${name} <span class="text-[11px] font-normal text-gray-400">(#${code})</span></h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Spotted just now • Shelf check</p>
+                    
+                    <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center">
+                        <button onclick="openComments('${name}')" class="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1">
+                            <i class="fa-regular fa-comment"></i> Discuss (0)
+                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="markSoldOut(this)" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-semibold px-2 py-1.5 rounded-lg transition">
+                                Mark Sold Out ❌
+                            </button>
+                            <a href="https://www.costco.ca/CatalogSearch?keyword=${code}" target="_blank" class="bg-red-50 text-red-600 hover:bg-red-100 text-[10px] font-semibold px-2 py-1.5 rounded-lg transition">
+                                Lookup <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Insert new post at the top of the feed
+            feedView.prepend(newCard);
+
+            // Reset form fields
+            document.getElementById('item-name').value = '';
+            document.getElementById('item-code').value = '';
+            document.getElementById('item-price').value = '';
+            document.getElementById('item-orig-price').value = '';
+            photoInput.value = '';
+
+            // Switch back to feed
+            switchTab('feed');
+            alert("Success! Your find has been published live to the feed.");
+        }
+
         function markSoldOut(button) {
             const card = button.closest('div.bg-white');
             card.style.opacity = '0.6';
-            alert("Report logged. If another shopper confirms, this item will be marked sold out.");
+            alert("Report logged. Marked as sold out.");
         }
 
         function openComments(itemName) {
@@ -230,11 +299,6 @@
             const list = document.getElementById('comment-list');
             list.innerHTML += `<div class="bg-gray-50 p-2 rounded-lg"><span class="font-semibold text-gray-700">You:</span> ${input.value}</div>`;
             input.value = '';
-        }
-
-        function submitPost() {
-            alert("Success! Item registered and broadcasted to the Ottawa store feed.");
-            switchTab('feed');
         }
     </script>
 </body>
