@@ -98,12 +98,12 @@
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Clearance Price ($)</label>
-                        <input type="text" id="item-price" value="" autocomplete="off" placeholder="e.g. 9.97" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500 font-bold text-red-600">
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Clearance Price ($) <span class="text-red-500">*</span></label>
+                        <input type="number" step="0.01" id="item-price" value="" autocomplete="off" placeholder="e.g. 399.97" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500 font-bold text-red-600">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 mb-1">Original Price ($)</label>
-                        <input type="text" id="item-orig-price" value="" autocomplete="off" placeholder="e.g. 19.99" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500">
+                        <input type="number" step="0.01" id="item-orig-price" value="" autocomplete="off" placeholder="e.g. 549.99" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500">
                     </div>
                 </div>
 
@@ -200,16 +200,15 @@
             });
         }
 
-        // Binarization canvas preprocessor: converts tag into crisp black text on pure white background
-        function preprocessImageToCanvas(file) {
+        // Mild contrast enhancement without destroying red ink or faint decimals
+        function prepareImageForScanning(file) {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     
-                    // Scale down oversized mobile photos for faster, cleaner OCR
-                    const maxDim = 1200;
+                    const maxDim = 1600;
                     let w = img.width;
                     let h = img.height;
                     if (w > maxDim || h > maxDim) {
@@ -224,16 +223,15 @@
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const data = imageData.data;
                     
-                    // Convert to pure black and white threshold (Otsu-style filter)
+                    // Mild Contrast Boost without erasing red marker lines
+                    const factor = 1.3;
                     for (let i = 0; i < data.length; i += 4) {
-                        const brightness = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
-                        const bw = brightness < 140 ? 0 : 255; // Threshold out backgrounds
-                        data[i] = bw;
-                        data[i + 1] = bw;
-                        data[i + 2] = bw;
+                        data[i]     = Math.min(255, factor * (data[i] - 128) + 128);     // Red
+                        data[i + 1] = Math.min(255, factor * (data[i + 1] - 128) + 128); // Green
+                        data[i + 2] = Math.min(255, factor * (data[i + 2] - 128) + 128); // Blue
                     }
                     ctx.putImageData(imageData, 0, 0);
-                    resolve(canvas.toDataURL('image/jpeg'));
+                    resolve(canvas.toDataURL('image/jpeg', 0.9));
                 };
                 img.src = URL.createObjectURL(file);
             });
@@ -245,65 +243,86 @@
             if (!file) return;
 
             const statusEl = document.getElementById('scan-status');
+            const priceInput = document.getElementById('item-price');
+            const origPriceInput = document.getElementById('item-orig-price');
+            const codeInput = document.getElementById('item-code');
+            const nameInput = document.getElementById('item-name');
+
+            // Reset inputs
+            nameInput.value = "";
+            codeInput.value = "";
+            priceInput.value = "";
+            origPriceInput.value = "";
+            priceInput.classList.remove('border-red-500', 'ring-2', 'ring-red-400');
             
-            // Clear inputs completely
-            document.getElementById('item-name').value = "";
-            document.getElementById('item-code').value = "";
-            document.getElementById('item-price').value = "";
-            document.getElementById('item-orig-price').value = "";
-            
-            statusEl.innerText = "🔍 Filtering background & scanning with OCR...";
+            statusEl.innerText = "🔍 Scanning tag details...";
 
             try {
-                const processedImageData = await preprocessImageToCanvas(file);
+                const processedImageData = await prepareImageForScanning(file);
 
                 const { data: { text } } = await Tesseract.recognize(processedImageData, 'eng');
                 console.log("Scanned OCR Raw Text:\n", text);
 
-                // 1. Extract Prices: Matches $399.97, 399.97, 549.99, or 399 97
-                const priceMatches = text.match(/\b\d{1,4}[\.,\s]?\d{2}\b/g);
-                let foundPrices = [];
+                let detectedPrices = [];
 
-                if (priceMatches) {
-                    priceMatches.forEach(rawP => {
-                        let cleanP = rawP.replace(/[^\d]/g, '');
-                        if (cleanP.length >= 3) {
-                            let formatted = (parseInt(cleanP, 10) / 100).toFixed(2);
+                // 1. Primary Regex: Standard formatted decimal numbers (e.g. 399.97, 549.99)
+                const standardPrices = text.match(/\b\d{1,4}[\.\,]\d{2}\b/g);
+                if (standardPrices) {
+                    standardPrices.forEach(p => {
+                        let val = parseFloat(p.replace(',', '.'));
+                        if (val > 0.50 && val < 5000) detectedPrices.push(val);
+                    });
+                }
+
+                // 2. Secondary Regex: Unformatted 5-digit price chunks (e.g. "39997" or "54999")
+                const unformattedPrices = text.match(/\b\d{4,6}\b/g);
+                if (unformattedPrices) {
+                    unformattedPrices.forEach(p => {
+                        if (p.endsWith('97') || p.endsWith('99') || p.endsWith('88') || p.endsWith('00')) {
+                            let formatted = (parseInt(p, 10) / 100).toFixed(2);
                             let val = parseFloat(formatted);
-                            if (val > 0.50 && val < 5000) {
-                                foundPrices.push(val);
-                            }
+                            if (val > 0.50 && val < 5000) detectedPrices.push(val);
                         }
                     });
                 }
 
-                if (foundPrices.length > 0) {
-                    const sortedPrices = [...new Set(foundPrices)].sort((a, b) => a - b);
-                    document.getElementById('item-price').value = sortedPrices[0].toFixed(2);
+                // Assign Prices
+                if (detectedPrices.length > 0) {
+                    const sortedPrices = [...new Set(detectedPrices)].sort((a, b) => a - b);
+                    priceInput.value = sortedPrices[0].toFixed(2); // Lowest price is clearance
                     if (sortedPrices.length >= 2) {
-                        document.getElementById('item-orig-price').value = sortedPrices[sortedPrices.length - 1].toFixed(2);
+                        origPriceInput.value = sortedPrices[sortedPrices.length - 1].toFixed(2);
                     }
                 }
 
-                // 2. Extract Item Code (6 to 7 digit Costco item number)
+                // 3. Extract Costco Item Code (6 to 7 digits)
                 const codeMatches = text.match(/\b\d{6,7}\b/g);
                 if (codeMatches && codeMatches.length > 0) {
-                    document.getElementById('item-code').value = codeMatches[0];
+                    codeInput.value = codeMatches[0];
                 }
 
-                // 3. Clean Text Lines for Item Name (Filters out noise like | \ ? and stroller mesh artifacts)
+                // 4. Extract Item Title (Filters out metadata noise)
                 const cleanLines = text.split('\n')
                     .map(l => l.replace(/[^a-zA-Z0-9\s]/g, '').trim())
                     .filter(l => l.length > 3 && !/^\d+$/.test(l) && !/costco|price|qt|kg|lb|item|report/i.test(l));
 
                 if (cleanLines.length > 0) {
-                    document.getElementById('item-name').value = cleanLines[0];
+                    nameInput.value = cleanLines[0];
                 }
 
-                statusEl.innerText = "✅ Tag scanned! Please verify/adjust values before posting.";
+                // UX Check: If price scan missed due to handwritten ink/screen glare
+                if (!priceInput.value) {
+                    statusEl.innerText = "⚠️ Could not auto-detect price (handwritten/glare). Please type the price below.";
+                    priceInput.classList.add('border-red-500', 'ring-2', 'ring-red-400');
+                    priceInput.focus(); // Jump straight to price input box
+                } else {
+                    statusEl.innerText = "✅ Tag scanned! Please verify values before posting.";
+                }
+
             } catch (err) {
                 console.error(err);
-                statusEl.innerText = "⚠️ OCR failed to read image. Please type details manually.";
+                statusEl.innerText = "⚠️ Scan error. Please type details manually.";
+                priceInput.focus();
             }
         }
 
@@ -328,7 +347,8 @@
             const photoInput = document.getElementById('item-photo');
 
             if (!price) {
-                alert("Please enter or scan a clearance price!");
+                alert("Please enter a clearance price before publishing!");
+                document.getElementById('item-price').focus();
                 return;
             }
 
