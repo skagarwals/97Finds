@@ -106,7 +106,7 @@
             </div>
             
             <div class="space-y-3">
-                <!-- HIGH VISIBILITY UPLOAD DROPZONE -->
+                <!-- UPLOAD DROPZONE -->
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 mb-1">Tag or Item Photo</label>
                     <div class="relative border-2 border-dashed border-red-300 bg-red-50/50 hover:bg-red-50 rounded-2xl p-4 text-center transition cursor-pointer">
@@ -115,7 +115,7 @@
                         <p class="text-[10px] text-gray-400 mt-0.5">Supports JPG, PNG</p>
                         <input type="file" id="item-photo" accept="image/*" onchange="processTagImage(event)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
                     </div>
-                    <p id="scan-status" class="text-[11px] text-red-600 font-medium mt-1"></p>
+                    <p id="scan-status" class="text-[11px] text-red-600 font-medium mt-1.5 text-center min-h-[16px]"></p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
@@ -164,7 +164,7 @@
 
     </main>
 
-    <!-- COMMENTS MODAL / DRAWER -->
+    <!-- COMMENTS MODAL -->
     <div id="comments-modal" class="hidden absolute inset-0 bg-black/50 z-50 flex flex-col justify-end">
         <div class="bg-white rounded-t-2xl p-4 max-h-[70vh] flex flex-col">
             <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-3">
@@ -185,20 +185,17 @@
 
     <!-- BOTTOM NAVIGATION BAR WITH ELEVATED CENTER FAB BUTTON -->
     <nav class="bg-white border-t border-gray-200 h-16 px-8 flex justify-between items-center fixed bottom-0 max-w-md w-full z-40">
-        <!-- Feed Tab -->
         <button onclick="switchTab('feed')" id="nav-feed" class="flex flex-col items-center text-red-600 transition">
             <i class="fa-solid fa-house text-lg"></i>
             <span class="text-[10px] font-bold mt-0.5">Feed</span>
         </button>
 
-        <!-- CENTER FLOATING ACTION BUTTON (INSTAGRAM/TIKTOK STYLE) -->
         <div class="relative -top-5">
             <button onclick="switchTab('post')" id="nav-post-fab" class="bg-red-600 hover:bg-red-700 active:scale-95 text-white rounded-full p-4 border-4 border-white fab-shadow flex items-center justify-center transition">
                 <i class="fa-solid fa-camera text-xl"></i>
             </button>
         </div>
 
-        <!-- Catalog / Search Tab -->
         <button onclick="switchTab('post')" id="nav-search" class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition">
             <i class="fa-solid fa-plus text-lg"></i>
             <span class="text-[10px] font-medium mt-0.5">Post</span>
@@ -241,13 +238,125 @@
             });
         }
 
-        // Placeholder scanner pipeline ready for Vercel + AI Vision API integration
+        function prepareImageForScanning(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    const maxDim = 1600;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                        else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                    }
+                    
+                    canvas.width = w;
+                    canvas.height = h;
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    
+                    const factor = 1.3;
+                    for (let i = 0; i < data.length; i += 4) {
+                        data[i]     = Math.min(255, factor * (data[i] - 128) + 128);     // Red
+                        data[i + 1] = Math.min(255, factor * (data[i + 1] - 128) + 128); // Green
+                        data[i + 2] = Math.min(255, factor * (data[i + 2] - 128) + 128); // Blue
+                    }
+                    ctx.putImageData(imageData, 0, 0);
+                    resolve(canvas.toDataURL('image/jpeg', 0.9));
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
         async function processTagImage(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             const statusEl = document.getElementById('scan-status');
-            statusEl.innerText = "📸 Image loaded! Ready for backend publication.";
+            const priceInput = document.getElementById('item-price');
+            const origPriceInput = document.getElementById('item-orig-price');
+            const codeInput = document.getElementById('item-code');
+            const nameInput = document.getElementById('item-name');
+
+            nameInput.value = "";
+            codeInput.value = "";
+            priceInput.value = "";
+            origPriceInput.value = "";
+            priceInput.classList.remove('border-red-500', 'ring-2', 'ring-red-400');
+            
+            statusEl.innerText = "🔍 Scanning tag details...";
+
+            try {
+                const processedImageData = await prepareImageForScanning(file);
+
+                const { data: { text } } = await Tesseract.recognize(processedImageData, 'eng');
+                console.log("Scanned OCR Raw Text:\n", text);
+
+                let detectedPrices = [];
+
+                // 1. Standard formatted prices (e.g. 399.97, 549.99)
+                const standardPrices = text.match(/\b\d{1,4}[\.\,]\d{2}\b/g);
+                if (standardPrices) {
+                    standardPrices.forEach(p => {
+                        let val = parseFloat(p.replace(',', '.'));
+                        if (val > 0.50 && val < 5000) detectedPrices.push(val);
+                    });
+                }
+
+                // 2. Unformatted 5-digit price chunks (e.g. 39997 or 54999)
+                const unformattedPrices = text.match(/\b\d{4,6}\b/g);
+                if (unformattedPrices) {
+                    unformattedPrices.forEach(p => {
+                        if (p.endsWith('97') || p.endsWith('99') || p.endsWith('88') || p.endsWith('00')) {
+                            let formatted = (parseInt(p, 10) / 100).toFixed(2);
+                            let val = parseFloat(formatted);
+                            if (val > 0.50 && val < 5000) detectedPrices.push(val);
+                        }
+                    });
+                }
+
+                // Assign Prices
+                if (detectedPrices.length > 0) {
+                    const sortedPrices = [...new Set(detectedPrices)].sort((a, b) => a - b);
+                    priceInput.value = sortedPrices[0].toFixed(2);
+                    if (sortedPrices.length >= 2) {
+                        origPriceInput.value = sortedPrices[sortedPrices.length - 1].toFixed(2);
+                    }
+                }
+
+                // 3. Costco Item Code (6-7 digits)
+                const codeMatches = text.match(/\b\d{6,7}\b/g);
+                if (codeMatches && codeMatches.length > 0) {
+                    codeInput.value = codeMatches[0];
+                }
+
+                // 4. Item Title Filter
+                const cleanLines = text.split('\n')
+                    .map(l => l.replace(/[^a-zA-Z0-9\s]/g, '').trim())
+                    .filter(l => l.length > 3 && !/^\d+$/.test(l) && !/costco|price|qt|kg|lb|item|report/i.test(l));
+
+                if (cleanLines.length > 0) {
+                    nameInput.value = cleanLines[0];
+                }
+
+                if (!priceInput.value) {
+                    statusEl.innerText = "⚠️ Could not auto-detect price. Please type it below.";
+                    priceInput.classList.add('border-red-500', 'ring-2', 'ring-red-400');
+                    priceInput.focus();
+                } else {
+                    statusEl.innerText = "✅ Tag scanned! Please verify values before posting.";
+                }
+
+            } catch (err) {
+                console.error(err);
+                statusEl.innerText = "⚠️ Scan error. Please type details manually.";
+                priceInput.focus();
+            }
         }
 
         function searchCatalog() {
@@ -320,7 +429,6 @@
 
             feedView.prepend(newCard);
 
-            // Reset form
             document.getElementById('item-name').value = '';
             document.getElementById('item-code').value = '';
             document.getElementById('item-price').value = '';
