@@ -207,7 +207,7 @@
 
             const statusEl = document.getElementById('scan-status');
             
-            // Clear out inputs completely
+            // CRITICAL: Explicitly clear all fields first so stale data never persists
             document.getElementById('item-name').value = "";
             document.getElementById('item-code').value = "";
             document.getElementById('item-price').value = "";
@@ -219,8 +219,8 @@
                 const { data: { text } } = await Tesseract.recognize(file, 'eng');
                 console.log("Scanned OCR Raw Text:\n", text);
 
-                // Extract all decimals (supporting 3 or 4 digit prices like 399.97)
-                const rawPrices = text.match(/\d{2,4}\.\d{2}/g);
+                // Extract all decimal prices (supporting 1 to 4 digits before decimal like 9.97 or 399.97)
+                const rawPrices = text.match(/\d{1,4}\.\d{2}/g);
                 if (rawPrices && rawPrices.length > 0) {
                     const uniquePrices = [...new Set(rawPrices.map(p => parseFloat(p)))].sort((a, b) => a - b);
                     
@@ -241,13 +241,13 @@
                 // Extract item name text lines
                 const lines = text.split('\n')
                     .map(l => l.trim())
-                    .filter(l => l.length > 4 && !/\d{4,}/.test(l) && !/costco|price|qt|kg|lb|item/i.test(l));
+                    .filter(l => l.length > 3 && !/\d{4,}/.test(l) && !/costco|price|qt|kg|lb|item/i.test(l));
 
                 if (lines.length > 0) {
                     document.getElementById('item-name').value = lines[0];
                 }
 
-                statusEl.innerText = "✅ Tag scanned! Please verify values before posting.";
+                statusEl.innerText = "✅ Tag scanned! Please verify/adjust values before posting.";
             } catch (err) {
                 console.error(err);
                 statusEl.innerText = "⚠️ OCR failed to read image. Please type details manually.";
