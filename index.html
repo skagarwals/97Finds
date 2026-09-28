@@ -6,6 +6,8 @@
     <title>Ottawa .97 Clearance Watch</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Include Tesseract.js for client-side OCR tag scanning -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>body { -webkit-overflow-scrolling: touch; }</style>
 </head>
 <body class="bg-gray-50 text-gray-800 flex flex-col h-screen justify-between max-w-md mx-auto border-x border-gray-200 shadow-xl relative">
@@ -74,22 +76,23 @@
         <!-- VIEW: POST ITEM -->
         <div id="post-view" class="hidden space-y-4">
             <h2 class="font-bold text-gray-700 text-sm uppercase tracking-wider">Report .97 Clearance</h2>
-            <p class="text-xs text-gray-500">Snap or select a tag photo, enter details, and publish to the live view!</p>
+            <p class="text-xs text-gray-500">Upload a price tag photo. AI vision will automatically parse the text and prices for you!</p>
             
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 mb-1">Tag Photo</label>
-                    <input type="file" id="item-photo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 border border-gray-200 rounded-xl p-1">
+                    <input type="file" id="item-photo" accept="image/*" onchange="processTagImage(event)" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 border border-gray-200 rounded-xl p-1">
+                    <p id="scan-status" class="text-[11px] text-red-600 font-medium mt-1"></p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 mb-1">Item Name / Desc</label>
-                        <input type="text" id="item-name" placeholder="e.g. Olive Oil" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500">
+                        <input type="text" id="item-name" placeholder="Auto-filled from tag" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 mb-1">Item # (on tag)</label>
-                        <input type="text" id="item-code" placeholder="e.g. 1582931" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500">
+                        <input type="text" id="item-code" placeholder="Auto-filled" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500">
                     </div>
                 </div>
 
@@ -117,7 +120,7 @@
 
                 <!-- Quick Catalog Search Button -->
                 <button type="button" onclick="searchCatalog()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-magnifying-glass text-red-600"></i> Lookup Item # on Catalog First
+                    <i class="fa-solid fa-magnifying-glass text-red-600"></i> Lookup Item # on Catalog
                 </button>
 
                 <button onclick="submitPost()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2">
@@ -197,13 +200,53 @@
             });
         }
 
+        // Automated OCR Scanning of Price Tag
+        async function processTagImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const statusEl = document.getElementById('scan-status');
+            statusEl.innerText = "🔍 Scanning tag with OCR vision...";
+
+            try {
+                const { data: { text } } = await Tesseract.recognize(file, 'eng');
+                console.log("Scanned OCR Text:", text);
+
+                // Extract prices ending in .97 or containing decimals
+                const prices = text.match(/\d+\.\d{2}/g);
+                if (prices && prices.length > 0) {
+                    document.getElementById('item-price').value = prices[0];
+                    if (prices.length > 1) {
+                        document.getElementById('item-orig-price').value = prices[1];
+                    }
+                }
+
+                // Extract 6 to 7 digit item code
+                const codeMatch = text.match(/\b\d{6,7}\b/);
+                if (codeMatch) {
+                    document.getElementById('item-code').value = codeMatch[0];
+                }
+
+                // Extract item name from text lines
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+                if (lines.length > 0) {
+                    document.getElementById('item-name').value = lines[0];
+                }
+
+                statusEl.innerText = "✅ Tag parsed successfully!";
+            } catch (err) {
+                console.error(err);
+                statusEl.innerText = "⚠️ OCR scan had trouble reading. You can fill fields manually.";
+            }
+        }
+
         function searchCatalog() {
             const code = document.getElementById('item-code').value;
             const name = document.getElementById('item-name').value;
             const query = code ? code : name;
             
             if (!query) {
-                alert("Please type the Item # or Item Name first!");
+                alert("Please scan a tag or type an Item # first!");
                 return;
             }
             window.open(`https://www.costco.ca/CatalogSearch?keyword=${encodeURIComponent(query)}`, '_blank');
@@ -263,19 +306,18 @@
                 </div>
             `;
 
-            // Insert new post at the top of the feed
             feedView.prepend(newCard);
 
-            // Reset form fields
+            // Reset form
             document.getElementById('item-name').value = '';
             document.getElementById('item-code').value = '';
             document.getElementById('item-price').value = '';
             document.getElementById('item-orig-price').value = '';
+            document.getElementById('scan-status').innerText = '';
             photoInput.value = '';
 
-            // Switch back to feed
             switchTab('feed');
-            alert("Success! Your find has been published live to the feed.");
+            alert("Success! Item published to the feed.");
         }
 
         function markSoldOut(button) {
