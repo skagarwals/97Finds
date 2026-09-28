@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Force browser not to cache index.html -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Ottawa .97 Clearance Watch</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -200,13 +204,19 @@
             });
         }
 
-        // Automated OCR Scanning of Price Tag
+        // Automated OCR Scanning of Price Tag with Auto-Clear fix
         async function processTagImage(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             const statusEl = document.getElementById('scan-status');
             statusEl.innerText = "🔍 Scanning tag with OCR vision...";
+
+            // Clear previous values immediately so stale data doesn't stick around
+            document.getElementById('item-name').value = '';
+            document.getElementById('item-code').value = '';
+            document.getElementById('item-price').value = '';
+            document.getElementById('item-orig-price').value = '';
 
             try {
                 const { data: { text } } = await Tesseract.recognize(file, 'eng');
@@ -308,7 +318,7 @@
 
             feedView.prepend(newCard);
 
-            // Reset form
+            // Reset form completely
             document.getElementById('item-name').value = '';
             document.getElementById('item-code').value = '';
             document.getElementById('item-price').value = '';
