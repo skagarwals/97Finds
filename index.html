@@ -200,6 +200,35 @@
             });
         }
 
+        // Image Preprocessing Pipeline for Screen Photos & Low Contrast Tags
+        function preprocessImageToCanvas(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    
+                    // Convert to Grayscale & Enhance Contrast
+                    for (let i = 0; i < data.length; i += 4) {
+                        const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                        const contrastVal = avg < 128 ? Math.max(0, avg - 30) : Math.min(255, avg + 30);
+                        data[i] = contrastVal;     // Red
+                        data[i + 1] = contrastVal; // Green
+                        data[i + 2] = contrastVal; // Blue
+                    }
+                    ctx.putImageData(imageData, 0, 0);
+                    resolve(canvas.toDataURL('image/jpeg'));
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
         // Automated OCR Scanning of Price Tag
         async function processTagImage(event) {
             const file = event.target.files[0];
@@ -207,19 +236,22 @@
 
             const statusEl = document.getElementById('scan-status');
             
-            // CRITICAL: Explicitly clear all fields first so stale data never persists
+            // Clear inputs completely
             document.getElementById('item-name').value = "";
             document.getElementById('item-code').value = "";
             document.getElementById('item-price').value = "";
             document.getElementById('item-orig-price').value = "";
             
-            statusEl.innerText = "🔍 Scanning tag with OCR vision...";
+            statusEl.innerText = "🔍 Optimizing image & scanning with OCR...";
 
             try {
-                const { data: { text } } = await Tesseract.recognize(file, 'eng');
+                // Preprocess image to eliminate screen moiré and boost contrast
+                const processedImageData = await preprocessImageToCanvas(file);
+
+                const { data: { text } } = await Tesseract.recognize(processedImageData, 'eng');
                 console.log("Scanned OCR Raw Text:\n", text);
 
-                // Extract all decimal prices (supporting 1 to 4 digits before decimal like 9.97 or 399.97)
+                // Extract all decimal prices (e.g. 399.97, 549.99, 9.97)
                 const rawPrices = text.match(/\d{1,4}\.\d{2}/g);
                 if (rawPrices && rawPrices.length > 0) {
                     const uniquePrices = [...new Set(rawPrices.map(p => parseFloat(p)))].sort((a, b) => a - b);
@@ -238,13 +270,13 @@
                     document.getElementById('item-code').value = codeMatches[0];
                 }
 
-                // Extract item name text lines
-                const lines = text.split('\n')
-                    .map(l => l.trim())
-                    .filter(l => l.length > 3 && !/\d{4,}/.test(l) && !/costco|price|qt|kg|lb|item/i.test(l));
+                // Clean and extract item name (stripping noise characters like |, \, ?, _)
+                const cleanLines = text.split('\n')
+                    .map(l => l.replace(/[^a-zA-Z0-9\s]/g, '').trim())
+                    .filter(l => l.length > 3 && !/^\d+$/.test(l) && !/costco|price|qt|kg|lb|item/i.test(l));
 
-                if (lines.length > 0) {
-                    document.getElementById('item-name').value = lines[0];
+                if (cleanLines.length > 0) {
+                    document.getElementById('item-name').value = cleanLines[0];
                 }
 
                 statusEl.innerText = "✅ Tag scanned! Please verify/adjust values before posting.";
