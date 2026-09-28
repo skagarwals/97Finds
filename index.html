@@ -204,7 +204,7 @@
             });
         }
 
-        // Automated OCR Scanning of Price Tag with Auto-Clear fix
+        // Automated OCR Scanning of Price Tag with Smart Parsing & Auto-Clear
         async function processTagImage(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -212,7 +212,7 @@
             const statusEl = document.getElementById('scan-status');
             statusEl.innerText = "🔍 Scanning tag with OCR vision...";
 
-            // Clear previous values immediately so stale data doesn't stick around
+            // Clear previous values immediately so stale data never lingers
             document.getElementById('item-name').value = '';
             document.getElementById('item-code').value = '';
             document.getElementById('item-price').value = '';
@@ -220,33 +220,45 @@
 
             try {
                 const { data: { text } } = await Tesseract.recognize(file, 'eng');
-                console.log("Scanned OCR Text:", text);
+                console.log("Scanned OCR Raw Text:\n", text);
 
-                // Extract prices ending in .97 or containing decimals
-                const prices = text.match(/\d+\.\d{2}/g);
-                if (prices && prices.length > 0) {
-                    document.getElementById('item-price').value = prices[0];
-                    if (prices.length > 1) {
-                        document.getElementById('item-orig-price').value = prices[1];
+                // 1. Smart Price Parsing: Extract all decimals and sort ascending (lowest = clearance, highest = original)
+                const rawPrices = text.match(/\d+\.\d{2}/g);
+                if (rawPrices && rawPrices.length > 0) {
+                    const uniquePrices = [...new Set(rawPrices.map(p => parseFloat(p)))].sort((a, b) => a - b);
+                    
+                    if (uniquePrices.length >= 2) {
+                        document.getElementById('item-price').value = uniquePrices[0].toFixed(2);
+                        document.getElementById('item-orig-price').value = uniquePrices[uniquePrices.length - 1].toFixed(2);
+                    } else if (uniquePrices.length === 1) {
+                        document.getElementById('item-price').value = uniquePrices[0].toFixed(2);
                     }
                 }
 
-                // Extract 6 to 7 digit item code
-                const codeMatch = text.match(/\b\d{6,7}\b/);
-                if (codeMatch) {
-                    document.getElementById('item-code').value = codeMatch[0];
+                // 2. Smart Item Code Parsing: Look for 6 to 7 digit item numbers
+                const codeMatches = text.match(/\b\d{6,7}\b/g);
+                if (codeMatches && codeMatches.length > 0) {
+                    document.getElementById('item-code').value = codeMatches[0];
                 }
 
-                // Extract item name from text lines
-                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+                // 3. Smart Item Name Parsing: Filter out noise lines and pick best candidate
+                const lines = text.split('\n')
+                    .map(l => l.trim())
+                    .filter(l => l.length > 4 && !/\d{4,}/.test(l) && !/costco|price|qt|kg|lb|item/i.test(l));
+
                 if (lines.length > 0) {
                     document.getElementById('item-name').value = lines[0];
+                } else {
+                    const fallbackLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+                    if (fallbackLines.length > 0) {
+                        document.getElementById('item-name').value = fallbackLines[0];
+                    }
                 }
 
                 statusEl.innerText = "✅ Tag parsed successfully!";
             } catch (err) {
                 console.error(err);
-                statusEl.innerText = "⚠️ OCR scan had trouble reading. You can fill fields manually.";
+                statusEl.innerText = "⚠️ OCR scan had trouble. Please fill in fields manually.";
             }
         }
 
