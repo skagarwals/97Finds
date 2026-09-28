@@ -200,27 +200,37 @@
             });
         }
 
-        // Image Preprocessing Pipeline for Screen Photos & Low Contrast Tags
+        // Binarization canvas preprocessor: converts tag into crisp black text on pure white background
         function preprocessImageToCanvas(file) {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
+                    
+                    // Scale down oversized mobile photos for faster, cleaner OCR
+                    const maxDim = 1200;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                        else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                    }
+                    
+                    canvas.width = w;
+                    canvas.height = h;
+                    ctx.drawImage(img, 0, 0, w, h);
 
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const data = imageData.data;
                     
-                    // Convert to Grayscale & Enhance Contrast
+                    // Convert to pure black and white threshold (Otsu-style filter)
                     for (let i = 0; i < data.length; i += 4) {
-                        const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                        const contrastVal = avg < 128 ? Math.max(0, avg - 30) : Math.min(255, avg + 30);
-                        data[i] = contrastVal;     // Red
-                        data[i + 1] = contrastVal; // Green
-                        data[i + 2] = contrastVal; // Blue
+                        const brightness = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+                        const bw = brightness < 140 ? 0 : 255; // Threshold out backgrounds
+                        data[i] = bw;
+                        data[i + 1] = bw;
+                        data[i + 2] = bw;
                     }
                     ctx.putImageData(imageData, 0, 0);
                     resolve(canvas.toDataURL('image/jpeg'));
@@ -242,38 +252,49 @@
             document.getElementById('item-price').value = "";
             document.getElementById('item-orig-price').value = "";
             
-            statusEl.innerText = "🔍 Optimizing image & scanning with OCR...";
+            statusEl.innerText = "🔍 Filtering background & scanning with OCR...";
 
             try {
-                // Preprocess image to eliminate screen moiré and boost contrast
                 const processedImageData = await preprocessImageToCanvas(file);
 
                 const { data: { text } } = await Tesseract.recognize(processedImageData, 'eng');
                 console.log("Scanned OCR Raw Text:\n", text);
 
-                // Extract all decimal prices (e.g. 399.97, 549.99, 9.97)
-                const rawPrices = text.match(/\d{1,4}\.\d{2}/g);
-                if (rawPrices && rawPrices.length > 0) {
-                    const uniquePrices = [...new Set(rawPrices.map(p => parseFloat(p)))].sort((a, b) => a - b);
-                    
-                    if (uniquePrices.length >= 2) {
-                        document.getElementById('item-price').value = uniquePrices[0].toFixed(2);
-                        document.getElementById('item-orig-price').value = uniquePrices[uniquePrices.length - 1].toFixed(2);
-                    } else if (uniquePrices.length === 1) {
-                        document.getElementById('item-price').value = uniquePrices[0].toFixed(2);
+                // 1. Extract Prices: Matches $399.97, 399.97, 549.99, or 399 97
+                const priceMatches = text.match(/\b\d{1,4}[\.,\s]?\d{2}\b/g);
+                let foundPrices = [];
+
+                if (priceMatches) {
+                    priceMatches.forEach(rawP => {
+                        let cleanP = rawP.replace(/[^\d]/g, '');
+                        if (cleanP.length >= 3) {
+                            let formatted = (parseInt(cleanP, 10) / 100).toFixed(2);
+                            let val = parseFloat(formatted);
+                            if (val > 0.50 && val < 5000) {
+                                foundPrices.push(val);
+                            }
+                        }
+                    });
+                }
+
+                if (foundPrices.length > 0) {
+                    const sortedPrices = [...new Set(foundPrices)].sort((a, b) => a - b);
+                    document.getElementById('item-price').value = sortedPrices[0].toFixed(2);
+                    if (sortedPrices.length >= 2) {
+                        document.getElementById('item-orig-price').value = sortedPrices[sortedPrices.length - 1].toFixed(2);
                     }
                 }
 
-                // Extract item code (6 to 7 digits)
+                // 2. Extract Item Code (6 to 7 digit Costco item number)
                 const codeMatches = text.match(/\b\d{6,7}\b/g);
                 if (codeMatches && codeMatches.length > 0) {
                     document.getElementById('item-code').value = codeMatches[0];
                 }
 
-                // Clean and extract item name (stripping noise characters like |, \, ?, _)
+                // 3. Clean Text Lines for Item Name (Filters out noise like | \ ? and stroller mesh artifacts)
                 const cleanLines = text.split('\n')
                     .map(l => l.replace(/[^a-zA-Z0-9\s]/g, '').trim())
-                    .filter(l => l.length > 3 && !/^\d+$/.test(l) && !/costco|price|qt|kg|lb|item/i.test(l));
+                    .filter(l => l.length > 3 && !/^\d+$/.test(l) && !/costco|price|qt|kg|lb|item|report/i.test(l));
 
                 if (cleanLines.length > 0) {
                     document.getElementById('item-name').value = cleanLines[0];
