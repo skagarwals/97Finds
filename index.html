@@ -9,140 +9,140 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
-        body { -webkit-overflow-scrolling: touch; }
-        .fab-shadow { box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4); }
+        body { -webkit-overflow-scrolling: touch; font-family: system-ui, -apple-system, sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fab-shadow { box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35); }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 flex flex-col h-screen justify-between max-w-md mx-auto border-x border-gray-200 shadow-xl relative">
+<body class="bg-slate-100 text-slate-800 flex flex-col h-screen justify-between max-w-md mx-auto border-x border-slate-200 relative">
 
     <!-- HEADER -->
-    <header class="bg-red-600 text-white p-3.5 shadow-md sticky top-0 z-40 flex justify-between items-center">
+    <header class="bg-red-600 text-white px-4 py-3 shadow-sm sticky top-0 z-40 flex justify-between items-center">
         <div class="flex items-center space-x-2">
-            <i class="fa-solid fa-tags text-xl"></i>
+            <div class="bg-white/10 p-2 rounded-xl">
+                <i class="fa-solid fa-tags text-lg text-white"></i>
+            </div>
             <div>
-                <h1 class="font-bold text-base tracking-wide leading-none">Ottawa .97 Watch</h1>
-                <span class="text-[10px] text-red-200">Costco Clearance Deals</span>
+                <h1 class="font-bold text-base tracking-tight leading-none">Ottawa .97 Watch</h1>
+                <span class="text-[10px] text-red-100 font-medium">Costco Clearance Tracker</span>
             </div>
         </div>
         
-        <!-- PROMINENT TOP CTA BUTTON -->
-        <button onclick="switchTab('post')" class="bg-white text-red-600 hover:bg-red-50 text-xs font-extrabold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition active:scale-95">
-            <i class="fa-solid fa-camera text-sm"></i>
-            <span>+ Post Deal</span>
+        <button onclick="switchTab('post')" class="bg-white text-red-600 hover:bg-red-50 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition active:scale-95">
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span>Post Deal</span>
         </button>
     </header>
 
     <!-- OTTAWA STORE FILTER BAR -->
-    <div class="bg-white border-b border-gray-200 px-4 py-2 flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-none sticky top-[57px] z-30">
-        <button onclick="filterStore('all')" class="store-chip bg-red-600 text-white text-xs px-3 py-1 rounded-full font-medium transition">All Ottawa</button>
-        <button onclick="filterStore('Kanata')" class="store-chip bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full font-medium transition">Kanata</button>
-        <button onclick="filterStore('Merivale')" class="store-chip bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full font-medium transition">Merivale</button>
-        <button onclick="filterStore('Hunt Club')" class="store-chip bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full font-medium transition">Hunt Club</button>
-        <button onclick="filterStore('Gloucester')" class="store-chip bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full font-medium transition">Gloucester</button>
-        <button onclick="filterStore('Strandherd')" class="store-chip bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full font-medium transition">Strandherd</button>
+    <div class="bg-white border-b border-slate-200 px-3 py-2 flex gap-1.5 overflow-x-auto whitespace-nowrap no-scrollbar sticky top-[53px] z-30">
+        <button onclick="filterStore('all', this)" class="store-chip bg-red-600 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-xs transition">All Stores</button>
+        <button onclick="filterStore('Kanata', this)" class="store-chip bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs px-3 py-1 rounded-full font-medium transition">Kanata</button>
+        <button onclick="filterStore('Merivale', this)" class="store-chip bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs px-3 py-1 rounded-full font-medium transition">Merivale</button>
+        <button onclick="filterStore('Hunt Club', this)" class="store-chip bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs px-3 py-1 rounded-full font-medium transition">Hunt Club</button>
+        <button onclick="filterStore('Gloucester', this)" class="store-chip bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs px-3 py-1 rounded-full font-medium transition">Gloucester</button>
+        <button onclick="filterStore('Strandherd', this)" class="store-chip bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs px-3 py-1 rounded-full font-medium transition">Strandherd</button>
     </div>
 
     <!-- MAIN CONTENT AREA -->
-    <main id="main-content" class="flex-1 overflow-y-auto p-4 pb-28 space-y-4">
+    <main id="main-content" class="flex-1 overflow-y-auto p-3 pb-24 space-y-3">
         
         <!-- VIEW: LIVE FEED -->
-        <div id="feed-view" class="space-y-4">
+        <div id="feed-view" class="space-y-3">
             
-            <!-- PROMOTIONAL HERO BANNER FOR CALL-TO-ACTION -->
-            <div class="bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl p-4 shadow-sm flex items-center justify-between">
-                <div>
-                    <h2 class="font-bold text-sm">Spotted a .97 deal in-store?</h2>
-                    <p class="text-xs text-red-100 mt-0.5">Snap a photo of the price tag to notify Ottawa shoppers!</p>
-                </div>
-                <button onclick="switchTab('post')" class="bg-white text-red-600 text-xs font-bold px-3 py-2 rounded-xl shadow ml-2 whitespace-nowrap hover:bg-gray-50 active:scale-95 transition">
-                    Upload Photo
-                </button>
-            </div>
+            <!-- CLEAN EXAMPLE DEAL CARD -->
+            <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden" data-store="Kanata">
+                <div class="p-3.5">
+                    <div class="flex justify-between items-start gap-2">
+                        <div>
+                            <span class="inline-block bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded-md mb-1">
+                                <i class="fa-solid fa-location-dot text-red-500 mr-1"></i>Kanata Warehouse
+                            </span>
+                            <h3 class="font-bold text-slate-900 text-sm leading-snug">Evenflo Shyft Stroller Wagon <span class="font-normal text-slate-400 text-xs">(#2066093)</span></h3>
+                        </div>
+                        <div class="text-right">
+                            <div class="bg-red-50 text-red-600 font-black text-base px-2.5 py-0.5 rounded-lg border border-red-100 inline-block">
+                                $399.97
+                            </div>
+                            <div class="text-[10px] text-slate-400 line-through mt-0.5">$549.99</div>
+                        </div>
+                    </div>
 
-            <!-- Item Card 1 -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" data-store="Kanata" data-status="active">
-                <div class="relative bg-gray-100 h-48 flex items-center justify-center">
-                    <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80" alt="Item" class="w-full h-full object-cover">
-                    <span class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">
-                        $19.97 <span class="text-[10px] line-through opacity-75">$49.99</span>
-                    </span>
-                    <span class="absolute top-2 left-2 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow flex items-center gap-1">
-                        <i class="fa-solid fa-check-circle"></i> Available
-                    </span>
-                    <span class="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded">
-                        <i class="fa-solid fa-location-dot mr-1 text-red-400"></i> Kanata Warehouse
-                    </span>
-                </div>
-                <div class="p-3">
-                    <h3 class="font-semibold text-gray-900 text-sm">Organic Maple Syrup 1L <span class="text-[11px] font-normal text-gray-400">(#123456)</span></h3>
-                    <p class="text-xs text-gray-500 mt-0.5">Spotted just now • Shelf #4</p>
-                    
-                    <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center">
-                        <button onclick="openComments('Organic Maple Syrup 1L')" class="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1">
-                            <i class="fa-regular fa-comment"></i> Discuss (2)
-                        </button>
+                    <div class="mt-3 pt-2.5 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <span class="text-slate-400 text-[11px]"><i class="fa-regular fa-clock mr-1"></i>Spotted today</span>
                         <div class="flex gap-2">
-                            <button onclick="markSoldOut(this)" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-semibold px-2 py-1.5 rounded-lg transition">
-                                Mark Sold Out ❌
+                            <button onclick="openComments('Evenflo Stroller')" class="text-slate-600 hover:text-slate-900 font-medium text-xs flex items-center gap-1 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                                <i class="fa-regular fa-comment text-slate-400"></i> Chat
                             </button>
-                            <a href="https://www.costco.ca/CatalogSearch?keyword=123456" target="_blank" class="bg-red-50 text-red-600 hover:bg-red-100 text-[10px] font-semibold px-2 py-1.5 rounded-lg transition">
-                                Lookup <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            <a href="https://www.costco.ca/CatalogSearch?keyword=2066093" target="_blank" class="text-red-600 hover:bg-red-50 font-semibold text-xs px-2.5 py-1 rounded-lg border border-red-200 flex items-center gap-1 transition">
+                                Lookup <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- EMPTY STATE PLACEHOLDER -->
+            <div id="empty-state" class="hidden text-center py-10 px-4">
+                <div class="bg-slate-200/60 w-12 h-12 rounded-full flex items-center justify-center mx-auto text-slate-400 text-lg mb-2">
+                    <i class="fa-solid fa-tag"></i>
+                </div>
+                <h3 class="font-bold text-slate-700 text-sm">No deals posted for this store</h3>
+                <p class="text-xs text-slate-400 mt-1">Be the first to share a .97 clearance find!</p>
+            </div>
+
         </div>
 
         <!-- VIEW: POST ITEM -->
-        <div id="post-view" class="hidden space-y-4">
-            <div class="flex justify-between items-center border-b border-gray-200 pb-2">
-                <div>
-                    <h2 class="font-bold text-gray-800 text-base">Post a Clearance Find</h2>
-                    <p class="text-xs text-gray-500">Upload a photo of the price tag or item</p>
+        <div id="post-view" class="hidden space-y-3">
+            <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-sm">Post Clearance Find</h2>
+                        <p class="text-[11px] text-slate-400">Upload a tag photo or type details below</p>
+                    </div>
+                    <button onclick="switchTab('feed')" class="text-xs text-slate-400 hover:text-slate-600 font-medium">Cancel</button>
                 </div>
-                <button onclick="switchTab('feed')" class="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
-            </div>
-            
-            <div class="space-y-3">
-                <!-- UPLOAD DROPZONE -->
+                
+                <!-- CLEAN UPLOAD BOX -->
                 <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">Tag or Item Photo</label>
-                    <div class="relative border-2 border-dashed border-red-300 bg-red-50/50 hover:bg-red-50 rounded-2xl p-4 text-center transition cursor-pointer">
-                        <i class="fa-solid fa-cloud-arrow-up text-red-500 text-2xl mb-1"></i>
-                        <p class="text-xs font-bold text-red-700">Tap here to choose or take a photo</p>
-                        <p class="text-[10px] text-gray-400 mt-0.5">Supports JPG, PNG</p>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Price Tag Photo</label>
+                    <div class="relative border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100/80 rounded-xl p-3 text-center transition cursor-pointer">
+                        <div class="flex items-center justify-center gap-2 text-slate-600">
+                            <i class="fa-solid fa-camera text-red-500 text-sm"></i>
+                            <span class="text-xs font-semibold">Tap to select photo</span>
+                        </div>
                         <input type="file" id="item-photo" accept="image/*" onchange="processTagImage(event)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
                     </div>
-                    <p id="scan-status" class="text-[11px] text-red-600 font-medium mt-1.5 text-center min-h-[16px]"></p>
+                    <p id="scan-status" class="text-[11px] text-red-600 font-medium mt-1 min-h-[16px] text-center"></p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Item Name / Desc</label>
-                        <input type="text" id="item-name" value="" autocomplete="off" placeholder="e.g. Stroller Wagon" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500">
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Item Name</label>
+                        <input type="text" id="item-name" value="" autocomplete="off" placeholder="e.g. Stroller Wagon" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:border-red-500 transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Item # (on tag)</label>
-                        <input type="text" id="item-code" value="" autocomplete="off" placeholder="e.g. 2066093" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500">
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Item # (on tag)</label>
+                        <input type="text" id="item-code" value="" autocomplete="off" placeholder="e.g. 2066093" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:border-red-500 transition">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Clearance Price ($) <span class="text-red-500">*</span></label>
-                        <input type="number" step="0.01" id="item-price" value="" autocomplete="off" placeholder="e.g. 399.97" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500 font-bold text-red-600">
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Clearance Price ($) <span class="text-red-500">*</span></label>
+                        <input type="number" step="0.01" id="item-price" value="" autocomplete="off" placeholder="399.97" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:border-red-500 font-bold text-red-600 transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Original Price ($)</label>
-                        <input type="number" step="0.01" id="item-orig-price" value="" autocomplete="off" placeholder="e.g. 549.99" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500">
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Original Price ($)</label>
+                        <input type="number" step="0.01" id="item-orig-price" value="" autocomplete="off" placeholder="549.99" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:border-red-500 transition">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">Ottawa Store Location</label>
-                    <select id="location-select" class="w-full text-xs p-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-red-500">
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Ottawa Store Location</label>
+                    <select id="location-select" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:border-red-500 transition">
                         <option value="Kanata">Kanata (Silver Seven Rd)</option>
                         <option value="Merivale">Nepean / Merivale Rd</option>
                         <option value="Hunt Club">West Hunt Club Rd</option>
@@ -151,53 +151,53 @@
                     </select>
                 </div>
 
-                <!-- Quick Catalog Search Button -->
-                <button type="button" onclick="searchCatalog()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-magnifying-glass text-red-600"></i> Lookup Item # on Catalog
-                </button>
-
-                <button onclick="submitPost()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-paper-plane"></i> Publish to Ottawa Feed
-                </button>
+                <div class="pt-1 flex gap-2">
+                    <button type="button" onclick="searchCatalog()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-lg transition text-center">
+                        Catalog Lookup
+                    </button>
+                    <button onclick="submitPost()" class="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm transition">
+                        Publish Deal
+                    </button>
+                </div>
             </div>
         </div>
 
     </main>
 
     <!-- COMMENTS MODAL -->
-    <div id="comments-modal" class="hidden absolute inset-0 bg-black/50 z-50 flex flex-col justify-end">
-        <div class="bg-white rounded-t-2xl p-4 max-h-[70vh] flex flex-col">
-            <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-3">
-                <h3 id="comment-title" class="font-bold text-sm text-gray-800">Discussion</h3>
-                <button onclick="closeComments()" class="text-gray-400 hover:text-gray-600 text-sm font-bold px-2">✕</button>
+    <div id="comments-modal" class="hidden absolute inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex flex-col justify-end">
+        <div class="bg-white rounded-t-2xl p-4 max-h-[70vh] flex flex-col shadow-xl">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+                <h3 id="comment-title" class="font-bold text-sm text-slate-800">Discussion</h3>
+                <button onclick="closeComments()" class="text-slate-400 hover:text-slate-600 text-sm font-bold px-2">✕</button>
             </div>
             <div id="comment-list" class="flex-1 overflow-y-auto space-y-2 text-xs mb-3">
-                <div class="bg-gray-50 p-2 rounded-lg">
-                    <span class="font-semibold text-gray-700">Dave M:</span> Plenty left near the back pallet as of 10 mins ago!
+                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                    <span class="font-bold text-slate-700">Dave M:</span> Plenty left near the back aisle as of 10 mins ago!
                 </div>
             </div>
             <div class="flex gap-2">
-                <input type="text" id="new-comment" value="" autocomplete="off" placeholder="Ask a question or give an update..." class="flex-1 text-xs border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-red-500">
-                <button onclick="addComment()" class="bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Post</button>
+                <input type="text" id="new-comment" value="" autocomplete="off" placeholder="Ask or share an update..." class="flex-1 text-xs border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-red-500">
+                <button onclick="addComment()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Post</button>
             </div>
         </div>
     </div>
 
-    <!-- BOTTOM NAVIGATION BAR WITH ELEVATED CENTER FAB BUTTON -->
-    <nav class="bg-white border-t border-gray-200 h-16 px-8 flex justify-between items-center fixed bottom-0 max-w-md w-full z-40">
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bg-white border-t border-slate-200 h-14 px-12 flex justify-between items-center fixed bottom-0 max-w-md w-full z-40">
         <button onclick="switchTab('feed')" id="nav-feed" class="flex flex-col items-center text-red-600 transition">
-            <i class="fa-solid fa-house text-lg"></i>
+            <i class="fa-solid fa-house text-base"></i>
             <span class="text-[10px] font-bold mt-0.5">Feed</span>
         </button>
 
-        <div class="relative -top-5">
-            <button onclick="switchTab('post')" id="nav-post-fab" class="bg-red-600 hover:bg-red-700 active:scale-95 text-white rounded-full p-4 border-4 border-white fab-shadow flex items-center justify-center transition">
-                <i class="fa-solid fa-camera text-xl"></i>
+        <div class="relative -top-4">
+            <button onclick="switchTab('post')" id="nav-post-fab" class="bg-red-600 hover:bg-red-700 active:scale-95 text-white rounded-full p-3.5 border-4 border-white fab-shadow flex items-center justify-center transition">
+                <i class="fa-solid fa-camera text-lg"></i>
             </button>
         </div>
 
-        <button onclick="switchTab('post')" id="nav-search" class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition">
-            <i class="fa-solid fa-plus text-lg"></i>
+        <button onclick="switchTab('post')" id="nav-search" class="flex flex-col items-center text-slate-400 hover:text-slate-600 transition">
+            <i class="fa-solid fa-plus text-base"></i>
             <span class="text-[10px] font-medium mt-0.5">Post</span>
         </button>
     </nav>
@@ -216,26 +216,35 @@
             } else {
                 feedView.classList.add('hidden');
                 postView.classList.remove('hidden');
-                navFeed.className = "flex flex-col items-center text-gray-400 hover:text-gray-600 transition";
+                navFeed.className = "flex flex-col items-center text-slate-400 hover:text-slate-600 transition";
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
-        function filterStore(storeName) {
+        function filterStore(storeName, btnElement) {
             document.querySelectorAll('.store-chip').forEach(chip => {
-                chip.className = "store-chip bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full font-medium transition";
+                chip.className = "store-chip bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs px-3 py-1 rounded-full font-medium transition";
             });
-            event.target.className = "store-chip bg-red-600 text-white text-xs px-3 py-1 rounded-full font-medium transition";
+            btnElement.className = "store-chip bg-red-600 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-xs transition";
 
-            const cards = document.querySelectorAll('#feed-view > div');
+            const cards = document.querySelectorAll('#feed-view > div[data-store]');
+            let visibleCount = 0;
             cards.forEach(card => {
                 const cardStore = card.getAttribute('data-store');
                 if (storeName === 'all' || cardStore === storeName) {
                     card.style.display = 'block';
+                    visibleCount++;
                 } else {
                     card.style.display = 'none';
                 }
             });
+
+            const emptyState = document.getElementById('empty-state');
+            if (visibleCount === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
         }
 
         function prepareImageForScanning(file) {
@@ -262,9 +271,9 @@
                     
                     const factor = 1.3;
                     for (let i = 0; i < data.length; i += 4) {
-                        data[i]     = Math.min(255, factor * (data[i] - 128) + 128);     // Red
-                        data[i + 1] = Math.min(255, factor * (data[i + 1] - 128) + 128); // Green
-                        data[i + 2] = Math.min(255, factor * (data[i + 2] - 128) + 128); // Blue
+                        data[i]     = Math.min(255, factor * (data[i] - 128) + 128);
+                        data[i + 1] = Math.min(255, factor * (data[i + 1] - 128) + 128);
+                        data[i + 2] = Math.min(255, factor * (data[i + 2] - 128) + 128);
                     }
                     ctx.putImageData(imageData, 0, 0);
                     resolve(canvas.toDataURL('image/jpeg', 0.9));
@@ -289,17 +298,14 @@
             origPriceInput.value = "";
             priceInput.classList.remove('border-red-500', 'ring-2', 'ring-red-400');
             
-            statusEl.innerText = "🔍 Scanning tag details...";
+            statusEl.innerText = "🔍 Local OCR scanning image...";
 
             try {
                 const processedImageData = await prepareImageForScanning(file);
-
                 const { data: { text } } = await Tesseract.recognize(processedImageData, 'eng');
-                console.log("Scanned OCR Raw Text:\n", text);
 
                 let detectedPrices = [];
 
-                // 1. Standard formatted prices (e.g. 399.97, 549.99)
                 const standardPrices = text.match(/\b\d{1,4}[\.\,]\d{2}\b/g);
                 if (standardPrices) {
                     standardPrices.forEach(p => {
@@ -308,7 +314,6 @@
                     });
                 }
 
-                // 2. Unformatted 5-digit price chunks (e.g. 39997 or 54999)
                 const unformattedPrices = text.match(/\b\d{4,6}\b/g);
                 if (unformattedPrices) {
                     unformattedPrices.forEach(p => {
@@ -320,7 +325,6 @@
                     });
                 }
 
-                // Assign Prices
                 if (detectedPrices.length > 0) {
                     const sortedPrices = [...new Set(detectedPrices)].sort((a, b) => a - b);
                     priceInput.value = sortedPrices[0].toFixed(2);
@@ -329,13 +333,11 @@
                     }
                 }
 
-                // 3. Costco Item Code (6-7 digits)
                 const codeMatches = text.match(/\b\d{6,7}\b/g);
                 if (codeMatches && codeMatches.length > 0) {
                     codeInput.value = codeMatches[0];
                 }
 
-                // 4. Item Title Filter
                 const cleanLines = text.split('\n')
                     .map(l => l.replace(/[^a-zA-Z0-9\s]/g, '').trim())
                     .filter(l => l.length > 3 && !/^\d+$/.test(l) && !/costco|price|qt|kg|lb|item|report/i.test(l));
@@ -345,16 +347,16 @@
                 }
 
                 if (!priceInput.value) {
-                    statusEl.innerText = "⚠️ Could not auto-detect price. Please type it below.";
+                    statusEl.innerText = "⚠️ Could not auto-detect price. Please type it manually.";
                     priceInput.classList.add('border-red-500', 'ring-2', 'ring-red-400');
                     priceInput.focus();
                 } else {
-                    statusEl.innerText = "✅ Tag scanned! Please verify values before posting.";
+                    statusEl.innerText = "✅ Tag scanned! Verify fields before posting.";
                 }
 
             } catch (err) {
                 console.error(err);
-                statusEl.innerText = "⚠️ Scan error. Please type details manually.";
+                statusEl.innerText = "⚠️ Scan error. Type details manually.";
                 priceInput.focus();
             }
         }
@@ -380,48 +382,47 @@
             const photoInput = document.getElementById('item-photo');
 
             if (!price) {
-                alert("Please enter a clearance price before publishing!");
+                alert("Please enter a clearance price!");
                 document.getElementById('item-price').focus();
                 return;
             }
 
-            let photoUrl = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80";
+            let imageMarkup = '';
             if (photoInput.files && photoInput.files[0]) {
-                photoUrl = URL.createObjectURL(photoInput.files[0]);
+                const photoUrl = URL.createObjectURL(photoInput.files[0]);
+                imageMarkup = `<div class="h-44 bg-slate-100 overflow-hidden border-b border-slate-100"><img src="${photoUrl}" class="w-full h-full object-cover"></div>`;
             }
 
             const feedView = document.getElementById('feed-view');
             const newCard = document.createElement('div');
-            newCard.className = "bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden";
+            newCard.className = "bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden";
             newCard.setAttribute('data-store', store);
-            newCard.setAttribute('data-status', 'active');
 
             newCard.innerHTML = `
-                <div class="relative bg-gray-100 h-48 flex items-center justify-center">
-                    <img src="${photoUrl}" alt="Item" class="w-full h-full object-cover">
-                    <span class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">
-                        $${price} ${origPrice ? `<span class="text-[10px] line-through opacity-75">$${origPrice}</span>` : ''}
-                    </span>
-                    <span class="absolute top-2 left-2 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow flex items-center gap-1">
-                        <i class="fa-solid fa-check-circle"></i> Available
-                    </span>
-                    <span class="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded">
-                        <i class="fa-solid fa-location-dot mr-1 text-red-400"></i> ${store} Warehouse
-                    </span>
-                </div>
-                <div class="p-3">
-                    <h3 class="font-semibold text-gray-900 text-sm">${name || "Clearance Item"} ${code ? `<span class="text-[11px] font-normal text-gray-400">(#${code})</span>` : ''}</h3>
-                    <p class="text-xs text-gray-500 mt-0.5">Spotted just now • Shelf check</p>
-                    
-                    <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center">
-                        <button onclick="openComments('${name || "Item"}')" class="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1">
-                            <i class="fa-regular fa-comment"></i> Discuss (0)
-                        </button>
+                ${imageMarkup}
+                <div class="p-3.5">
+                    <div class="flex justify-between items-start gap-2">
+                        <div>
+                            <span class="inline-block bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded-md mb-1">
+                                <i class="fa-solid fa-location-dot text-red-500 mr-1"></i>${store} Warehouse
+                            </span>
+                            <h3 class="font-bold text-slate-900 text-sm leading-snug">${name || "Clearance Find"} ${code ? `<span class="font-normal text-slate-400 text-xs">(#${code})</span>` : ''}</h3>
+                        </div>
+                        <div class="text-right">
+                            <div class="bg-red-50 text-red-600 font-black text-base px-2.5 py-0.5 rounded-lg border border-red-100 inline-block">
+                                $${price}
+                            </div>
+                            ${origPrice ? `<div class="text-[10px] text-slate-400 line-through mt-0.5">$${origPrice}</div>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="mt-3 pt-2.5 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <span class="text-slate-400 text-[11px]"><i class="fa-regular fa-clock mr-1"></i>Spotted just now</span>
                         <div class="flex gap-2">
-                            <button onclick="markSoldOut(this)" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-semibold px-2 py-1.5 rounded-lg transition">
-                                Mark Sold Out ❌
+                            <button onclick="openComments('${name || "Item"}')" class="text-slate-600 hover:text-slate-900 font-medium text-xs flex items-center gap-1 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                                <i class="fa-regular fa-comment text-slate-400"></i> Chat
                             </button>
-                            ${code ? `<a href="https://www.costco.ca/CatalogSearch?keyword=${code}" target="_blank" class="bg-red-50 text-red-600 hover:bg-red-100 text-[10px] font-semibold px-2 py-1.5 rounded-lg transition">Lookup <i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : ''}
+                            ${code ? `<a href="https://www.costco.ca/CatalogSearch?keyword=${code}" target="_blank" class="text-red-600 hover:bg-red-50 font-semibold text-xs px-2.5 py-1 rounded-lg border border-red-200 flex items-center gap-1 transition">Lookup <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>` : ''}
                         </div>
                     </div>
                 </div>
@@ -429,6 +430,10 @@
 
             feedView.prepend(newCard);
 
+            // Hide empty state if visible
+            document.getElementById('empty-state').classList.add('hidden');
+
+            // Reset form
             document.getElementById('item-name').value = '';
             document.getElementById('item-code').value = '';
             document.getElementById('item-price').value = '';
@@ -437,13 +442,6 @@
             photoInput.value = '';
 
             switchTab('feed');
-            alert("Success! Item published to the Ottawa feed.");
-        }
-
-        function markSoldOut(button) {
-            const card = button.closest('div.bg-white');
-            card.style.opacity = '0.6';
-            alert("Report logged. Marked as sold out.");
         }
 
         function openComments(itemName) {
@@ -459,7 +457,7 @@
             const input = document.getElementById('new-comment');
             if(!input.value) return;
             const list = document.getElementById('comment-list');
-            list.innerHTML += `<div class="bg-gray-50 p-2 rounded-lg"><span class="font-semibold text-gray-700">You:</span> ${input.value}</div>`;
+            list.innerHTML += `<div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100"><span class="font-bold text-slate-700">You:</span> ${input.value}</div>`;
             input.value = '';
         }
     </script>
